@@ -21,6 +21,7 @@ def random_generate(empty_lst) :
         return False
 
 def move(dir) : 
+    temp = BOARD.copy()
     if dir % 2 == 0 : # dir == 0, 2
         for x in range(HEIGHT) : 
             temp_lst = []
@@ -43,6 +44,9 @@ def move(dir) :
             for value in sum_lst : 
                 BOARD[idx,y] = value
                 idx += DY[dir]
+    if not np.array_equal(temp, BOARD) : 
+        if not random_generate(get_empty()) : 
+            end_game()
 
 def sum_line(lst, dir) :
     if dir >= 2 : lst.reverse()
@@ -54,6 +58,7 @@ def sum_line(lst, dir) :
         try : 
             if lst[idx] == lst[idx + 1] : 
                 result_lst.append(lst[idx] + lst[idx + 1])
+                SCORE[0] = lst[idx] + lst[idx + 1]
                 idx += 1
             else : 
                 result_lst.append(lst[idx])
@@ -90,6 +95,8 @@ def game_start() :
     FONT_SIZE = 60
     font = pygame.font.SysFont(None,FONT_SIZE)
 
+    random_generate(get_empty())
+
     while True : 
         for event in pygame.event.get() : 
             if event.type == QUIT : 
@@ -98,20 +105,12 @@ def game_start() :
             if event.type == KEYDOWN : 
                 if event.key == K_LEFT : 
                     move(1)
-                    if not random_generate(get_empty()) : 
-                        end_game()
                 if event.key == K_UP : 
                     move(0)
-                    if not random_generate(get_empty()) : 
-                        end_game()
                 if event.key == K_RIGHT : 
                     move(3)
-                    if not random_generate(get_empty()) : 
-                        end_game()
                 if event.key == K_DOWN : 
                     move(2)
-                    if not random_generate(get_empty()) : 
-                        end_game()
 
         windowSurface.fill(COLOR_BACKGROUND)
 
@@ -137,6 +136,7 @@ DX = [-1, 0, 1, 0]
 DY = [0, 1, 0, -1]
 WIDTH = HEIGHT = 4
 BOARD = np.zeros((WIDTH, HEIGHT))
+SCORE = [2]
 
 game_start()
 
