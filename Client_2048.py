@@ -30,7 +30,7 @@ def move(dir) :
             for y in range(WIDTH) : 
                 if BOARD[x,y] : temp_lst.append(BOARD[x,y])
                 BOARD[x,y] = 0
-            sum_lst = sum_line(temp_lst,dir)
+            sum_lst, reward = sum_line(temp_lst,dir)
             for value in sum_lst : 
                 BOARD[x,idx] = value
                 idx -= DX[dir]
@@ -41,40 +41,64 @@ def move(dir) :
             for x in range(WIDTH) : 
                 if BOARD[x,y] : temp_lst.append(BOARD[x,y])
                 BOARD[x,y] = 0
-            sum_lst = sum_line(temp_lst,dir)
+            sum_lst, reward = sum_line(temp_lst,dir)
             for value in sum_lst : 
                 BOARD[idx,y] = value
                 idx += DY[dir]
-    if not np.array_equal(temp, BOARD) : 
-        if not random_generate(get_empty()) : 
-            end_game()
+    if not np.array_equal(temp, BOARD) :
+        random_generate(get_empty())
+    if check_end() : 
+        return (temp, -1, BOARD, check_end())
+    else :
+        return (temp, reward, BOARD, False)
 
 def sum_line(lst, dir) :
     if dir >= 2 : lst.reverse()
-        
+
+    reward = 0
     idx = 0
     result_lst = []
-    if len(lst) == 1 : return lst
+    if len(lst) == 1 : return (lst, reward)
     while idx < len(lst): 
         try : 
             if lst[idx] == lst[idx + 1] : 
                 result_lst.append(lst[idx] + lst[idx + 1])
-                SCORE[0] = lst[idx] + lst[idx + 1]
+                SCORE[0] = max(SCORE[0], lst[idx] + lst[idx + 1])
                 idx += 1
+                #reward += 0.1 * (lst[idx] + lst[idx + 1])
+                reward += 0.1 * SCORE[0]
             else : 
                 result_lst.append(lst[idx])
         except : 
             result_lst.append(lst[idx])
         idx += 1
-    return result_lst
+    return (result_lst,reward)
 
 def end_game() : 
     pygame.quit()
     sys.exit()
 
+def check_end() : 
+    if not len(get_empty()) : 
+        for x in range(WIDTH) : 
+            for y in range(HEIGHT) : 
+                try :
+                    if BOARD[x,y] == BOARD[x,y+1] : 
+                        return False
+                    if BOARD[x,y] == BOARD[x+1,y] :
+                        return False
+                except : pass
+        return True
+    else : return False
+
 # game main start function
 def game_start() : 
     pygame.init()
+    SCORE[0] = 0
+
+    random_generate(get_empty())
+
+def game_main_loop(action) : 
 
     WINDOWWIDTH = 450
     WINDOWHEIGHT = 450
@@ -95,41 +119,45 @@ def game_start() :
 
     FONT_SIZE = 60
     font = pygame.font.SysFont(None,FONT_SIZE)
+    windowSurface.fill(COLOR_BACKGROUND)
 
-    random_generate(get_empty())
-
-    while True : 
-        for event in pygame.event.get() : 
-            if event.type == QUIT : 
-                pygame.quit()
-                sys.exit()
-            if event.type == KEYDOWN : 
-                if event.key == K_LEFT : 
-                    move(1)
-                if event.key == K_UP : 
-                    move(0)
-                if event.key == K_RIGHT : 
-                    move(3)
-                if event.key == K_DOWN : 
-                    move(2)
-
-        windowSurface.fill(COLOR_BACKGROUND)
-
-        for y in range(WIDTH) : 
-            for x in range(HEIGHT) : 
-                if BOARD[x][y] <= 64 : 
-                    pygame.draw.rect(windowSurface, COLOR_DIC['COLOR_'+str(int(BOARD[x][y]))], [WINDOWWIDTH/45 * (11 * x + 1), WINDOWHEIGHT/45 * (11 * y+1),WINDOWWIDTH/45 * 10, WINDOWHEIGHT/45 * 10])
-                else : 
-                    pygame.draw.rect(windowSurface, COLOR_DIC['COLOR_128'], [WINDOWWIDTH/45 * (11 * x + 1), WINDOWHEIGHT/45 * (11 * y+1),WINDOWWIDTH/45 * 10, WINDOWHEIGHT/45 * 10])
-
-                if BOARD[x][y] != 0 and BOARD[x][y] <= 4 : 
-                    img = font.render(str(int(BOARD[x][y])),True,COLOR_BLACK)
-                    windowSurface.blit(img, [WINDOWWIDTH/45 * (11 * x + 6)-FONT_SIZE*len(str(int(BOARD[x][y])))/5, WINDOWHEIGHT/45 * (11 * y+6)-FONT_SIZE/3])
-                elif BOARD[x][y] >= 8: 
-                    img = font.render(str(int(BOARD[x][y])),True,COLOR_WHITE)
-                    windowSurface.blit(img, [WINDOWWIDTH/45 * (11 * x + 6)-FONT_SIZE*len(str(int(BOARD[x][y])))/5, WINDOWHEIGHT/45 * (11 * y+6)-FONT_SIZE/3])
+    for y in range(WIDTH) : 
+        for x in range(HEIGHT) : 
+            if BOARD[x][y] <= 64 : 
+                pygame.draw.rect(windowSurface, COLOR_DIC['COLOR_'+str(int(BOARD[x][y]))], [WINDOWWIDTH/45 * (11 * x + 1), WINDOWHEIGHT/45 * (11 * y+1),WINDOWWIDTH/45 * 10, WINDOWHEIGHT/45 * 10])
+            elif BOARD[x][y] <=256 : 
+                pygame.draw.rect(windowSurface, COLOR_DIC['COLOR_128'], [WINDOWWIDTH/45 * (11 * x + 1), WINDOWHEIGHT/45 * (11 * y+1),WINDOWWIDTH/45 * 10, WINDOWHEIGHT/45 * 10])
+            else : 
+                pygame.draw.rect(windowSurface, COLOR_BLACK, [WINDOWWIDTH/45 * (11 * x + 1), WINDOWHEIGHT/45 * (11 * y+1),WINDOWWIDTH/45 * 10, WINDOWHEIGHT/45 * 10])
+            
+            if BOARD[x][y] != 0 and BOARD[x][y] <= 4 : 
+                img = font.render(str(int(BOARD[x][y])),True,COLOR_BLACK)
+                windowSurface.blit(img, [WINDOWWIDTH/45 * (11 * x + 6)-FONT_SIZE*len(str(int(BOARD[x][y])))/5, WINDOWHEIGHT/45 * (11 * y+6)-FONT_SIZE/3])
+            elif BOARD[x][y] >= 8: 
+                img = font.render(str(int(BOARD[x][y])),True,COLOR_WHITE)
+                windowSurface.blit(img, [WINDOWWIDTH/45 * (11 * x + 6)-FONT_SIZE*len(str(int(BOARD[x][y])))/5, WINDOWHEIGHT/45 * (11 * y+6)-FONT_SIZE/3])
         
-        pygame.display.update()
+    pygame.display.update()
+    for event in pygame.event.get() : 
+        if event.type == QUIT : 
+            pygame.quit()
+            sys.exit()
+            '''
+        if event.type == KEYDOWN : 
+            if event.key == K_LEFT : 
+                return move(1)
+            if event.key == K_UP : 
+                return move(0)
+            if event.key == K_RIGHT : 
+                return move(3)
+            if event.key == K_DOWN : 
+                return move(2)
+                '''
+    if action == 0 : return move(1)
+    elif action == 1 : return move(0)
+    elif action == 2 : return move(3)
+    elif action == 3 : return move(2)
+
 
 
 # game settings and constant factors
@@ -137,8 +165,7 @@ DX = [-1, 0, 1, 0]
 DY = [0, 1, 0, -1]
 WIDTH = HEIGHT = 4
 BOARD = np.zeros((WIDTH, HEIGHT))
-SCORE = [2]
-
+SCORE = [0]
 game_start()
 
 '''
