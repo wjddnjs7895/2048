@@ -13,11 +13,13 @@ class DQN(tf.keras.Model) :
         super(DQN, self).__init__()
         self.fc1 = Dense(24, activation = 'relu')
         self.fc2 = Dense(24, activation = 'relu')
+        self.fc3 = Dense(24, activation = 'relu')
         self.fc_out = Dense(action_size, kernel_initializer = RandomUniform(-1e-3, 1e-3))
 
     def call(self,x) : 
         x = self.fc1(x)
         x = self.fc2(x)
+        x = self.fc3(x)
         q = self.fc_out(x)
         return q
 
@@ -31,8 +33,8 @@ class DQNAgent :
         self.discount_factor = 0.99
         self.learning_rate = 0.001
         self.epsilon = 1.0
-        self.epsilon_decay = 0.99999
-        self.epsilon_min = 0.3
+        self.epsilon_decay = 0.9999
+        self.epsilon_min = 0.2
         self.batch_size = 64
         self.train_start = 1000
 
@@ -93,7 +95,7 @@ if __name__ == "__main__" :
 
     scores, episodes = [], []
     score_avg = 0
-    num_episode = 50000
+    num_episode = 5000
 
     for e in range(num_episode) : 
         score = 0
@@ -104,8 +106,7 @@ if __name__ == "__main__" :
         print("episode number : #",e)
 
         while not done :
-            #print(done,' / ',e)
-            #if e >= 200 : time.sleep(0.1)
+            #if e > 100 : time.sleep(0.1)
             temp_board = client.BOARD.copy()
             for x in range(client.WIDTH) :
                 for y in range(client.HEIGHT) :
@@ -123,7 +124,6 @@ if __name__ == "__main__" :
                 agent.train_model()
 
             if done : 
-                #print("done : ", done)
                 agent.update_target_model()
 
                 score_avg = 0.9 * score_avg + 0.1 * score if score_avg!= 0 else score
@@ -132,5 +132,5 @@ if __name__ == "__main__" :
 
                 scores.append(score_avg)
                 episodes.append(e)
-
-                #exit event must be added
+    
+    agent.model.save_weights("./save_model/model",save_format = "tf")

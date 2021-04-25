@@ -47,8 +47,10 @@ def move(dir) :
                 idx += DY[dir]
     if not np.array_equal(temp, BOARD) :
         random_generate(get_empty())
+    reward += 0.1 * SCORE[0]
+    reward += get_reward()
     if check_end() : 
-        return (temp, -1, BOARD, check_end())
+        return (temp, -100, BOARD, True)
     else :
         return (temp, reward, BOARD, False)
 
@@ -66,13 +68,21 @@ def sum_line(lst, dir) :
                 SCORE[0] = max(SCORE[0], lst[idx] + lst[idx + 1])
                 idx += 1
                 #reward += 0.1 * (lst[idx] + lst[idx + 1])
-                reward += 0.1 * SCORE[0]
             else : 
                 result_lst.append(lst[idx])
         except : 
             result_lst.append(lst[idx])
         idx += 1
     return (result_lst,reward)
+
+def get_reward() : 
+    count = 0
+    for x in range(WIDTH) :
+        for y in range(HEIGHT) : 
+            if BOARD[x,y] == SCORE[0] : 
+                count += 1
+    count = 2 if count >= 2 else count
+    return count * SCORE[0] * 0.03
 
 def end_game() : 
     pygame.quit()
