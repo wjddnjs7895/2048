@@ -16,12 +16,16 @@ def get_empty() :
 def random_generate(empty_lst) : 
     try :
         idx = random.randrange(0, len(empty_lst))
-        BOARD[empty_lst[idx][0], empty_lst[idx][1]] = 2
+        if np.random.rand() <= 0.9 : 
+            BOARD[empty_lst[idx][0], empty_lst[idx][1]] = 2
+        else : 
+            BOARD[empty_lst[idx][0], empty_lst[idx][1]] = 4
         return True
     except : 
         return False
 
 def move(dir) : 
+    global MAX_SCORE
     temp = BOARD.copy()
     if dir % 2 == 0 : # dir == 0, 2
         for x in range(HEIGHT) : 
@@ -47,12 +51,16 @@ def move(dir) :
                 idx += DY[dir]
     if not np.array_equal(temp, BOARD) :
         random_generate(get_empty())
-    reward += 0.1 * SCORE[0]
-    reward += get_reward()
+        reward += 0.01*get_reward()
     if check_end() : 
-        return (temp, -100, BOARD, True)
+        MAX_SCORE = max(MAX_SCORE, SCORE[0])
+        print('Current Score :',SCORE[0])
+        print('Total Max Score :',MAX_SCORE)
+        current = BOARD.copy()
+        return (temp, 0, current, True)
     else :
-        return (temp, reward, BOARD, False)
+        current = BOARD.copy()
+        return (temp, reward, current, False)
 
 def sum_line(lst, dir) :
     if dir >= 2 : lst.reverse()
@@ -67,7 +75,7 @@ def sum_line(lst, dir) :
                 result_lst.append(lst[idx] + lst[idx + 1])
                 SCORE[0] = max(SCORE[0], lst[idx] + lst[idx + 1])
                 idx += 1
-                #reward += 0.1 * (lst[idx] + lst[idx + 1])
+                reward += 0.1 * (lst[idx] + lst[idx + 1])
             else : 
                 result_lst.append(lst[idx])
         except : 
@@ -79,10 +87,8 @@ def get_reward() :
     count = 0
     for x in range(WIDTH) :
         for y in range(HEIGHT) : 
-            if BOARD[x,y] == SCORE[0] : 
-                count += 1
-    count = 2 if count >= 2 else count
-    return count * SCORE[0] * 0.03
+            count += BOARD[x,y]
+    return count
 
 def end_game() : 
     pygame.quit()
@@ -135,7 +141,7 @@ def game_main_loop(action) :
         for x in range(HEIGHT) : 
             if BOARD[x][y] <= 64 : 
                 pygame.draw.rect(windowSurface, COLOR_DIC['COLOR_'+str(int(BOARD[x][y]))], [WINDOWWIDTH/45 * (11 * x + 1), WINDOWHEIGHT/45 * (11 * y+1),WINDOWWIDTH/45 * 10, WINDOWHEIGHT/45 * 10])
-            elif BOARD[x][y] <=256 : 
+            elif BOARD[x][y] <=1024 : 
                 pygame.draw.rect(windowSurface, COLOR_DIC['COLOR_128'], [WINDOWWIDTH/45 * (11 * x + 1), WINDOWHEIGHT/45 * (11 * y+1),WINDOWWIDTH/45 * 10, WINDOWHEIGHT/45 * 10])
             else : 
                 pygame.draw.rect(windowSurface, COLOR_BLACK, [WINDOWWIDTH/45 * (11 * x + 1), WINDOWHEIGHT/45 * (11 * y+1),WINDOWWIDTH/45 * 10, WINDOWHEIGHT/45 * 10])
@@ -176,6 +182,7 @@ DY = [0, 1, 0, -1]
 WIDTH = HEIGHT = 4
 BOARD = np.zeros((WIDTH, HEIGHT))
 SCORE = [0]
+MAX_SCORE = 0
 game_start()
 
 '''
